@@ -1,0 +1,64 @@
+# keepalive-api configuration template.
+# Copy to config.yaml and edit. Secrets can use ${ENV_VAR} expansion so they
+# don't have to live in the file.
+
+server:
+  host: 0.0.0.0
+  port: 8080
+  # If set, clients must send `Authorization: Bearer <token>`. Comment out to
+  # disable gateway-level auth (the upstream api_key still applies).
+  # auth_token: ${KEEPALIVE_TOKEN}
+
+providers:
+  # ── Example 1: spaced mode (strict, uniform spacing) ─────────────────────
+  # 60 RPM => one send every 1 second, strictly.
+  - name: openai-main
+    base_url: https://api.openai.com/v1
+    api_key: ${OPENAI_API_KEY}
+    models: [gpt-4o, gpt-4o-mini]
+    rate_limit:
+      mode: spaced
+      rpm: 60
+      # interval_seconds: 2   # optional; if set, stricter (max) of rpm/interval wins
+      max_wait_seconds: null  # null = wait forever (default)
+
+  # ── Example 2: burst mode (token bucket with capacity) ───────────────────
+  # Allows an initial burst of `capacity` requests, then smooths to RPM.
+  - name: deepseek
+    base_url: https://api.deepseek.com/v1
+    api_key: ${DEEPSEEK_API_KEY}
+    models: [deepseek-chat, deepseek-reasoner]
+    rate_limit:
+      mode: burst
+      rpm: 120
+      capacity: 10            # initial burst size
+      max_wait_seconds: 30    # 503 after waiting 30s in queue
+
+  # ── Example3: low RPM spaced (e.g. 20 RPM => every 3s) ──────────────────
+  - name: moonshot
+    base_url: https://api.moonshot.cn/v1
+    api_key: ${MOONSHOT_API_KEY}
+    models: [moonshot-v1-8k]
+    rate_limit:
+      mode: spaced
+      rpm: 20                 # => one send every 3 seconds
+      max_wait_seconds: null
+
+  # ── Example 4: NVIDIA NIM with agent-friendly burst config ────────────────
+  # For agents (Hermes, etc.) that make rapid sequential requests:
+  # - BURST mode with capacity allows tool-calling loops without 429s
+  # - max_concurrent caps in-flight requests to prevent pile-up
+  # - retry_upstream_429 auto-retries if NVIDIA still 429s (safety net)
+  - name: nvidia
+    base_url: https://integrate.api.nvidia.com/v1
+    api_key: ${NVIDIA_API_KEY}
+    models: [your-model-here]
+    rate_limit:
+      mode: burst
+      rpm: 36                 # 90% of 40 RPM = safe headroom
+      capacity: 5             # allow burst of 5 requests instantly
+      max_concurrent: 5       # cap simultaneous in-flight requests
+      max_wait_seconds: 300   # queue up to 5 min rather than failing
+      retry_upstream_429: true
+      max_upstream_retries: 5
+      upstream_retry_backoff_seconds: 2.0

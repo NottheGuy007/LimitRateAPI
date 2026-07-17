@@ -1,0 +1,32 @@
+# ── Python ──────────────────────────────────────────────
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# ── test / coverage ─────────────────────────────────────
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# ── local config / secrets (DO NOT COMMIT) ──────────────
+config.yaml
+config.local.yaml
+.env
+.env.*
+*.key
+*.pem
+
+# ── OS / editor ─────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.log
